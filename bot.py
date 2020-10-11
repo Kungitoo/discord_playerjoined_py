@@ -7,6 +7,13 @@ import sys
 print('start')
 engine = pyttsx3.init()
 
+voice = None
+async def get_voice(channel):
+    if voice != None: 
+        return voice
+    return await channel.connect()
+
+## Needs a path to ffmpeg.exe from the disk. Not provided
 ffmpeg_path = "C:\\Users\\domin\\Documents\\ShareX\\Tools\\ffmpeg.exe"
 who_where = dict()
 
@@ -28,13 +35,8 @@ class MyClient(discord.Client):
 
     async def on_message(self, message):
         print('Message from {0.author}: {0.content}'.format(message))
-        # if message.content == '$connect':
-        #     self.voice_clienct = await self.connect_voice(message)
 
     async def on_voice_state_update(self, who, before, after):
-        # print(who)
-        # print(before)
-        # print(after)
 
         if after.channel == None:
             await self.remove_name(before.channel, who)
@@ -51,26 +53,24 @@ class MyClient(discord.Client):
     async def connect_voice(self, author, action, channel):
         if author.bot: return
 
-        print(author)
-        # guild = author.guild
-        # channel = discord.utils.get(guild.channels, name = "AOE2")
-        voice = await channel.connect()
-        print(self)
-        print(voice)
-        voice_message = author.name + " " + action
+        voice = await get_voice(channel)
+        print(author.display_name)
+        username = author.display_name if author.display_name else author.name
+        voice_message = username + " " + action
 
         await record_and_play(voice, voice_message)
         await voice.disconnect()
-        print('left ' + channel.name)
 
     async def remove_name(self, channel, who):
-        return
         who_where[channel.name].remove(who)
         await self.connect_voice(who, 'left', channel)
 
     async def add_name(self, channel, who):
         if channel.name in who_where:
-            who_where[channel.name].add(who)
+            where = who_where[channel.name]
+            if who in where:
+                return
+            where.add(who)
         else:
             who_where[channel.name] = { who }
         await self.connect_voice(who, 'joined', channel)

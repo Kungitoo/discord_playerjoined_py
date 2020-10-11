@@ -1,0 +1,1 @@
+py .\bot.py "$(cat .\bot_key.txt)"
